@@ -248,5 +248,14 @@ def main():
                 with st.spinner("Building..."): xlsx=generate_excel(df_hist,ALLOYS,conv)
                 st.download_button("⬇️ Download",data=xlsx,file_name=f"AA_5Alloy_{date.today()}.xlsx",mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-if __name__ == "__main__":
+# ── Admin: Seed historical data ──────────────────────────
+if st.sidebar.button("🌱 Seed Historical Data"):
+    from seed_history import HISTORY
+    for row in HISTORY:
+        conn = get_db()
+        conn.execute("INSERT OR REPLACE INTO price_history VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", row)
+    conn.commit()
+    st.sidebar.success(f"✅ Seeded {len(HISTORY)} rows!")
+    st.rerun()
+    if __name__ == "__main__":
     main()
