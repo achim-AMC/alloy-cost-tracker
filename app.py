@@ -25,7 +25,14 @@ COLORS = {'AA2040':'#C00000','AA2050':'#2F5496','AA2099':'#008000','AA2618':'#70
 
 st.set_page_config(page_title="Alloy Cost Tracker", page_icon="✈️", layout="wide")
 
-# ── Authentication ───────────────────────────────────────────
+# ── Config helper (supports Streamlit secrets AND environment variables) ──
+def _get_secret(section, key, env_name):
+    """Try st.secrets first, then environment variables."""
+    try:
+        return st.secrets[section][key]
+    except Exception:
+        return os.environ.get(env_name, "")
+
 def check_password():
     """Simple password gate."""
     if "authenticated" not in st.session_state:
@@ -34,7 +41,8 @@ def check_password():
         return True
     pwd = st.text_input("🔒 Enter password to access the tracker:", type="password")
     if pwd:
-        if pwd == st.secrets["app"]["password"]:
+        app_pwd = _get_secret("app", "password", "APP_PASSWORD")
+        if pwd == app_pwd:
             st.session_state.authenticated = True
             st.rerun()
         else:
@@ -44,10 +52,9 @@ def check_password():
 # ── Database (Turso cloud) ───────────────────────────────────
 @st.cache_resource
 def get_db():
-    conn = libsql.connect(
-        st.secrets["turso"]["url"],
-        auth_token=st.secrets["turso"]["token"],
-    )
+    url = _get_secret("turso", "url", "TURSO_URL")
+    token = _get_secret("turso", "token", "TURSO_TOKEN")
+    conn = libsql.connect(url, auth_token=token)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS price_history (
             date TEXT PRIMARY KEY,
